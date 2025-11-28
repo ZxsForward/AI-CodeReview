@@ -1,0 +1,84 @@
+server:
+  port: 5000
+
+logging:
+  level:
+    root: info
+  file:
+    max-size: 100MB
+    name: code-review.log
+    path: /log/
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+    url: jdbc:mysql://localhost:3306/code_review?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8
+    type: com.alibaba.druid.pool.DruidDataSource
+
+mybatis:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 大模型供应商配置,支持 deepseek，openai，zhipuai，qwen，coze
+LLM_PROVIDER: deepseek
+
+# DeepSeek settings
+DEEPSEEK_API_KEY:
+DEEPSEEK_API_URL: https://api.deepseek.com/chat/completions
+DEEPSEEK_API_MODEL: deepseek-chat
+
+# OpenAI settings
+OPENAI_API_KEY:
+OPENAI_API_URL: https://api.openai.com/v1/chat/completions
+OPENAI_API_MODEL: gpt-4o-mini
+
+# ZhipuAI settings
+ZHIPUAI_API_KEY:
+ZHIPUAI_API_URL: https://open.bigmodel.cn/api/paas/v4/chat/completions
+ZHIPUAI_API_MODEL: glm-4.6
+
+# Qwen settings
+QWEN_API_KEY:
+QWEN_API_URL: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+QWEN_API_MODEL: qwen-coder-plus
+
+# Coze settings
+COZE_API_KEY:
+COZE_API_URL: https://api.coze.cn/v1/workflow/stream_run
+COZE_WORKFLOW_ID:
+
+# 开启Push Review功能(如果不需要push事件触发Code Review，设置为0)
+PUSH_REVIEW_ENABLED: 1
+# 开启Merge请求过滤，过滤仅当合并目标分支是受保护分支时才Review(开启此选项请确保仓库已配置受保护分支protected branches)
+MERGE_REVIEW_ONLY_PROTECTED_BRANCHES_ENABLED: 1
+
+# 支持review的文件类型
+SUPPORTED_EXTENSIONS: .c,.cc,.cpp,.cs,.css,.cxx,.go,.h,.hh,.hpp,.hxx,.java,.js,.jsx,.md,.php,.py,.sql,.ts,.tsx,.vue,.yml
+# 每次 Review 的最大 Token 限制（超出部分自动截断）
+REVIEW_MAX_TOKENS: 10000
+# Review 风格选项：professional（专业） | sarcastic（毒舌） | gentle（温和） | humorous（幽默）
+REVIEW_STYLE: professional
+
+# Gitlab配置
+# 部分老版本Gitlab webhook不传递URL，需要开启此配置，示例：https://gitlab.example.com
+GITLAB_URL:
+# 系统会优先使用此GITLAB_ACCESS_TOKEN，如果未配置，则使用Webhook 传递的Secret Token
+GITLAB_ACCESS_TOKEN:
+
+# Github配置
+# 系统会优先使用此GITLAB_ACCESS_TOKEN，如果未配置，则使用Webhook 传递的Secret Token
+GITHUB_ACCESS_TOKEN:
+
+# 企业微信配置
+WECOM_ENABLED: 0
+WECOM_WEBHOOK_URL: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
+# 企业微信_GITLAB_URL（大写）
+WECOM_WEBHOOK_URL_GIT_PYAMC_COM: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
+
+# 企业微信机器人配置（多个机器人需配置多个）
+# 企业微信_项目名称（大写）
+WECOM_WEBHOOK_URL_COS-SERVER: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
+WECOM_WEBHOOK_URL_COS-WEB: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx

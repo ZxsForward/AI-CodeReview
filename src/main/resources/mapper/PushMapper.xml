@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.code.review.mapper.PushMapper">
+    <insert id="insertPush">
+        INSERT INTO push_review_log (project_name,
+                                     author,
+                                     branch,
+                                     updated_at,
+                                     commit_messages,
+                                     score,
+                                     review_result,
+                                     additions,
+                                     deletions)
+        VALUES (#{projectName},
+                #{author},
+                #{branch},
+                #{updatedAt},
+                #{commitMessages},
+                #{score},
+                #{reviewResult},
+                #{additions},
+                #{deletions})
+    </insert>
+</mapper>
