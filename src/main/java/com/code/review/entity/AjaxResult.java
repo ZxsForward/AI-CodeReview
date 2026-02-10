@@ -44,7 +44,7 @@ public class AjaxResult implements Serializable {
     }
 
     public static AjaxResult success() {
-        return success(null);
+        return success((Object) null);
     }
 
     public static AjaxResult error(int code, String msg, Object data) {
