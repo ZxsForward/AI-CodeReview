@@ -2,40 +2,32 @@ package com.code.review.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.EntityBuilder;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP客户端工具类，封装了常用的HTTP GET/POST请求方法
  */
 @Slf4j
 public class HttpClientUtils {
-    private static final CloseableHttpClient httpClient;
-
-    static {
-        try {
-            httpClient = SSLUtils.createInsecureHttpClient();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * 发送GET请求
@@ -59,27 +51,13 @@ public class HttpClientUtils {
      * @throws Exception 请求异常
      */
     public static String get(String url, Map<String, String> params, Map<String, String> headers) throws Exception {
-        String body;
-        CloseableHttpResponse httpResponse = null;
-
         log.debug("调用get, url=【{}】", url);
 
-        try {
-            // 构建带参数的URL
-            String fullUrl = buildUrlWithParams(url, params);
+        // 构建带参数的URL
+        String fullUrl = buildUrlWithParams(url, params);
+        HttpGet httpGet = new HttpGet(fullUrl);
 
-            HttpGet httpGet = new HttpGet(fullUrl);
-            httpGet.setConfig(getConfig());
-
-            // 添加请求头
-            addHeaders(httpGet, headers);
-
-            httpResponse = httpClient.execute(httpGet);
-            body = handleResponse(httpResponse);
-        } finally {
-            closeResponse(httpResponse);
-        }
-        return body;
+        return executeHttpRequest(httpGet, headers);
     }
 
     /**
@@ -154,29 +132,22 @@ public class HttpClientUtils {
      */
     public static String post(String url, String entityString, Map<String, String> params,
                               Map<String, String> headers, boolean jsonPost) {
-        String body = null;
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.setConfig(getConfig());
-        CloseableHttpResponse httpResponse = null;
-
         log.debug("调用post, url=【{}】", url);
 
-        try {
-            // 构建请求实体
-            HttpEntity httpEntity = buildHttpEntity(entityString, params, jsonPost);
+        HttpPost httpPost = new HttpPost(url);
+
+        // 构建请求实体
+        HttpEntity httpEntity = buildHttpEntity(entityString, params, jsonPost);
+        if (httpEntity != null) {
             httpPost.setEntity(httpEntity);
-
-            // 添加请求头
-            addHeaders(httpPost, headers);
-
-            httpResponse = httpClient.execute(httpPost);
-            body = handleResponse(httpResponse);
-        } catch (IOException e) {
-            log.error("调用post Exception, url=【{}】,param=【{}】", url, params, e);
-        } finally {
-            closeResponse(httpResponse);
         }
-        return body;
+
+        try {
+            return executeHttpRequest(httpPost, headers);
+        } catch (Exception e) {
+            log.error("调用post Exception, url=【{}】,param=【{}】", url, params, e);
+            return null;
+        }
     }
 
     /**
@@ -216,7 +187,7 @@ public class HttpClientUtils {
      * @param request HTTP请求对象
      * @param headers 请求头映射
      */
-    private static void addHeaders(HttpUriRequest request, Map<String, String> headers) {
+    private static void addHeaders(ClassicHttpRequest request, Map<String, String> headers) {
         if (!CollectionUtils.isEmpty(headers)) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
                 request.addHeader(header.getKey(), header.getValue());
@@ -233,68 +204,80 @@ public class HttpClientUtils {
      * @return HTTP实体对象
      */
     private static HttpEntity buildHttpEntity(String entityString, Map<String, String> params, boolean jsonPost) {
-        EntityBuilder entityBuilder = EntityBuilder.create();
-
-        // 设置内容类型
+        ContentType contentType;
         if (jsonPost) {
-            entityBuilder.setContentType(ContentType.APPLICATION_JSON.withCharset("utf-8"));
+            contentType = ContentType.APPLICATION_JSON;
         } else {
-            entityBuilder.setContentType(ContentType.APPLICATION_FORM_URLENCODED.withCharset("utf-8"));
+            contentType = ContentType.APPLICATION_FORM_URLENCODED;
         }
 
-        // 添加表单参数
+        // 如果有表单参数，创建表单实体
         if (!CollectionUtils.isEmpty(params)) {
             List<NameValuePair> nameValuePairList = new ArrayList<>();
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 nameValuePairList.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
             }
-            entityBuilder.setParameters(nameValuePairList);
+            return new UrlEncodedFormEntity(nameValuePairList, StandardCharsets.UTF_8);
         }
 
         // 添加实体字符串
         if (StringUtils.isNotBlank(entityString)) {
-            entityBuilder.setText(entityString);
+            return new StringEntity(entityString, contentType);
         }
 
-        return entityBuilder.build();
+        return null;
     }
 
     /**
-     * 处理HTTP响应
+     * 执行HTTP请求的统一方法
      *
-     * @param httpResponse HTTP响应对象
-     * @return 响应体字符串
-     * @throws IOException IO异常
+     * @param request HTTP请求对象
+     * @param headers 请求头
+     * @return 响应结果字符串
+     * @throws Exception 请求异常
      */
-    private static String handleResponse(CloseableHttpResponse httpResponse) throws IOException {
-        String body = null;
-        int statusCode = httpResponse.getStatusLine().getStatusCode();
+    private static String executeHttpRequest(ClassicHttpRequest request, Map<String, String> headers) throws Exception {
+        try (CloseableHttpClient httpClient = SSLUtils.createInsecureHttpClient()) {
+            // 设置请求配置（需要类型转换）
+            if (request instanceof HttpGet) {
+                ((HttpGet) request).setConfig(getConfig());
+            } else if (request instanceof HttpPost) {
+                ((HttpPost) request).setConfig(getConfig());
+            }
 
+            addHeaders(request, headers);
+
+            return httpClient.execute(request, response -> {
+                try {
+                    return handleHttpResponse(response);
+                } catch (Exception e) {
+                    log.error("处理HTTP响应时发生异常", e);
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+    }
+
+    /**
+     * 处理HTTP响应的统一方法
+     *
+     * @param response HTTP响应对象
+     * @return 响应内容字符串
+     * @throws Exception 处理异常
+     */
+    private static String handleHttpResponse(org.apache.hc.core5.http.ClassicHttpResponse response) throws Exception {
+        int statusCode = response.getCode();
         if (statusCode == 200) {
-            HttpEntity entity = httpResponse.getEntity();
+            HttpEntity entity = response.getEntity();
             if (entity != null) {
-                body = EntityUtils.toString(entity, "utf-8");
+                String body = EntityUtils.toString(entity, StandardCharsets.UTF_8);
                 EntityUtils.consume(entity);
+                return body;
             }
         } else {
             log.error("状态码不为200，statusCode=【{}】", statusCode);
         }
-        return body;
-    }
-
-    /**
-     * 关闭HTTP响应连接
-     *
-     * @param httpResponse HTTP响应对象
-     */
-    private static void closeResponse(CloseableHttpResponse httpResponse) {
-        if (httpResponse != null) {
-            try {
-                httpResponse.close();
-            } catch (IOException e) {
-                log.error("关闭HTTP响应连接异常", e);
-            }
-        }
+        return null;
     }
 
     /**
@@ -305,8 +288,8 @@ public class HttpClientUtils {
     private static RequestConfig getConfig() {
         int defaultTimeOut = 60000;
         return RequestConfig.custom()
-                .setSocketTimeout(defaultTimeOut)
-                .setConnectTimeout(defaultTimeOut)
+                .setResponseTimeout(defaultTimeOut, TimeUnit.MILLISECONDS)
+                .setConnectionRequestTimeout(defaultTimeOut, TimeUnit.MILLISECONDS)
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.code.review.utils;
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingType;
+import com.knuddels.jtokkit.api.IntArrayList;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -47,12 +48,12 @@ public class TokenUtils {
         Encoding encoding = Encodings.newDefaultEncodingRegistry().getEncoding(encodingType);
 
         // 将文本编码为 tokens
-        List<Integer> tokens = encoding.encode(changeText);
+        List<Integer> tokens = encoding.encode(changeText).boxed();
 
         // 如果 tokens 数量超过最大限制，则截断
         if (tokens.size() > reviewMaxTokens) {
             List<Integer> truncatedTokens = tokens.subList(0, reviewMaxTokens);
-            return encoding.decode(truncatedTokens);
+            return encoding.decode((IntArrayList) truncatedTokens);
         }
 
         return changeText;

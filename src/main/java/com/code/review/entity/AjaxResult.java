@@ -1,21 +1,22 @@
 package com.code.review.entity;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.http.HttpStatus;
 
 import java.io.Serializable;
 
 @Data
+@Schema(description = "通用响应结果")
 public class AjaxResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "状态码")
+    @Schema(description = "状态码")
     private int code;
-    @ApiModelProperty(value = "返回信息")
+    @Schema(description = "返回信息")
     private String msg;
-    @ApiModelProperty(value = "返回数据")
+    @Schema(description = "返回数据")
     private Object data;
 
     public AjaxResult() {

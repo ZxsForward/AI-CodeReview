@@ -5,9 +5,11 @@ logging:
   level:
     root: info
   file:
-    max-size: 100MB
     name: code-review.log
     path: /log/
+  logback:
+    rolling policy:
+      max-file-size: 100MB
 
 spring:
   datasource:
