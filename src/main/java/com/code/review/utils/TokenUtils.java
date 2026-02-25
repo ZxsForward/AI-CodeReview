@@ -44,16 +44,19 @@ public class TokenUtils {
         }
 
         // 获取编码器
-        EncodingType encodingType = EncodingType.valueOf(EncodingType.CL100K_BASE.getName());
-        Encoding encoding = Encodings.newDefaultEncodingRegistry().getEncoding(encodingType);
+        Encoding encoding = Encodings.newDefaultEncodingRegistry()
+                .getEncoding(EncodingType.CL100K_BASE);
 
         // 将文本编码为 tokens
         List<Integer> tokens = encoding.encode(changeText).boxed();
 
         // 如果 tokens 数量超过最大限制，则截断
         if (tokens.size() > reviewMaxTokens) {
-            List<Integer> truncatedTokens = tokens.subList(0, reviewMaxTokens);
-            return encoding.decode((IntArrayList) truncatedTokens);
+            IntArrayList truncatedTokens = new IntArrayList();
+            for (int i = 0; i < reviewMaxTokens; i++) {
+                truncatedTokens.add(tokens.get(i));
+            }
+            return encoding.decode(truncatedTokens);
         }
 
         return changeText;
