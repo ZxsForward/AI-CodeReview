@@ -1,7 +1,7 @@
 # AI CodeReview - 开发规范指南
 
 ## 项目概述
-基于 Spring Boot 3.2.12（Java 17）开发的 AI 代码审查自动化系统，支持 GitHub/GitLab Webhook 集成。
+基于 Spring Boot 3.3.12（Java 21）开发的 AI 代码审查自动化系统，支持 GitHub/GitLab Webhook 集成。
 
 ## 构建命令
 
@@ -45,6 +45,7 @@ mvn test -X
 - **主类：** `AICodeReviewApplication`
 - **资源目录：** `src/main/resources/`
 - **服务端口：** 5000（在 application.yml 中配置）
+- **JDK 版本：** 21
 
 ### 包组织结构
 ```
@@ -90,6 +91,29 @@ Spring Boot 3.x 使用 Jakarta EE 命名空间：
 - 控制器统一返回 `AjaxResult` 保持响应格式一致
 - 控制器方法中使用 `try-catch`，通过 `AjaxResult.error()` 返回错误响应
 
+### AjaxResult 返回类
+统一响应格式，code 枚举值：
+- **success**：返回 code = 200
+- **error**：返回 code = 500
+- **warn**：返回 code = 400
+
+使用方法：
+```java
+// 成功响应
+AjaxResult.success()
+AjaxResult.success("操作成功")
+AjaxResult.success("操作成功", data)
+AjaxResult.success(data)
+
+// 错误响应
+AjaxResult.error("错误信息")
+AjaxResult.error("错误信息", data)
+
+// 警告响应
+AjaxResult.warn("警告信息")
+AjaxResult.warn("警告信息", data)
+```
+
 ### 注释规范
 - 公共 API 的方法级 Javadoc 使用英文编写
 - 行内注释可使用中文（现有约定）
@@ -103,24 +127,19 @@ Spring Boot 3.x 使用 Jakarta EE 命名空间：
 - 连接池：Druid
 
 ### 核心依赖
-- Spring Boot Starter Web 3.2.12
+- Spring Boot Starter Web 3.3.12（由 Spring Boot Parent 管理）
 - Spring Boot Starter AOP
 - Lombok（仅编译时使用）
 - MyBatis Spring Boot Starter 3.0.4
-- SpringDoc OpenAPI 2.3.0
+- SpringDoc OpenAPI 2.6.0
 - Apache HttpClient 5.x
 - JTokkit 1.1.0（Token 计算）
+- Druid Spring Boot 3 Starter 1.2.24
 
 ### 日志规范
 - 通过 Lombok 的 `@Slf4j` 使用 SLF4J
 - 日志级别：`log.info()`、`log.error()`、`log.warn()`
 - 日志输出到 `code-review.log`
-
-### 测试说明
-- 当前代码库中没有测试文件
-- 添加测试时使用 JUnit 5（JUnit Jupiter）
-- 测试文件放在 `src/test/java/com/code/review/`
-- 遵循与主代码相同的包结构
 
 ### API 文档
 - OpenAPI JSON: http://localhost:5000/v3/api-docs
